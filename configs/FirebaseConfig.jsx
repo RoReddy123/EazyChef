@@ -10,13 +10,12 @@ import { getStorage } from 'firebase/storage';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCGdrTocA5X4ma0hghD4AH53XIR37QTfHA",
+  apiKey: "AIzaSyDEbI_uQx-L5HcUyq4HhdVbfP1z2tufNm4",
   authDomain: "eazychef-equovi.firebaseapp.com",
   projectId: "eazychef-equovi",
   storageBucket: "eazychef-equovi.appspot.com",
-  messagingSenderId: "949681909228",
-  appId: "1:949681909228:web:cbab34821aad21a4e264c9",
-  measurementId: "G-HQM3RVZ1P4"
+  messagingSenderId: "1090773415466",
+  appId: "1:1090773415466:ios:9a38cae439737e2e303553",
 };
 
 // Initialize Firebase
