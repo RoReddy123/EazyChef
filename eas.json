@@ -1,0 +1,26 @@
+{
+  "build": {
+    "production": {
+      "ios": {
+        "distribution": "store",
+        "autoIncrement": true
+      },
+      "android": {
+        "distribution": "store",
+        "autoIncrement": true
+      }
+    },
+    "internal": {
+      "ios": {
+        "distribution": "internal",
+        "simulator": false
+      },
+      "android": {
+        "distribution": "internal"
+      }
+    }
+  },
+  "cli": {
+    "appVersionSource": "remote"
+  }
+}

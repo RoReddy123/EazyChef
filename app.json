@@ -36,7 +36,10 @@
     },
     "extra": {
       "googleClientId": "949681909228-61f28ivhf6rmveum9s0no15988b7p33k.apps.googleusercontent.com",
-      "USDA_API_KEY": "sqHVsKYVhIsHWcyxuyorQXX9MNBCtBJy8o61gL2i"
+      "USDA_API_KEY": "sqHVsKYVhIsHWcyxuyorQXX9MNBCtBJy8o61gL2i",
+      "eas": {
+        "projectId": "4d58962c-2ed1-40d7-96b4-0adaf23d477d"
+      }
     }
   }
 }
