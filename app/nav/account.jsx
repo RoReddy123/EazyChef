@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import LoginScreen from './../LoginScreen';
 import SignUp from './../SignUp';
-import home from './../(tabs)/home'; // Import the tab navigator
+import Dashboard from './../(tabs)/Dashboard'; // Import the tab navigator
 
 const Stack = createNativeStackNavigator();
 
@@ -25,7 +25,7 @@ const AppNav = () => {
         />
         <Stack.Screen 
           name="HomeTabs" 
-          component={home} 
+          component={Dashboard} 
           options={{
             headerLeft: null,
             gestureEnabled: false,

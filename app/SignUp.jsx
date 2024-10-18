@@ -30,7 +30,7 @@ export default function SignUpScreen() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       Alert.alert('Success', 'Account created successfully!');
-      router.replace('/home'); // Navigate to Home after successful sign-up
+      router.replace('/Dashboard'); // Navigate to Home after successful sign-up
     } catch (error) {
       console.error('Sign Up Error:', error);
       Alert.alert('Sign Up Error', error.message);

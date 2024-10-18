@@ -33,6 +33,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "googleClientId": "949681909228-61f28ivhf6rmveum9s0no15988b7p33k.apps.googleusercontent.com",
+      "USDA_API_KEY": "sqHVsKYVhIsHWcyxuyorQXX9MNBCtBJy8o61gL2i"
     }
   }
 }

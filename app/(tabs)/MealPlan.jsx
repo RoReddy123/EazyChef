@@ -3,7 +3,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Header from './../Header';
-import WeeklyMeals from '../../components/Meal_plan/WeeklyMeals';
+import WeeklyMeals from '../../components/Meal_Plan/WeeklyMeals';
 
 export default function MealPlan() {
     return (

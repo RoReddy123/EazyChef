@@ -63,7 +63,7 @@ export default function SignInScreen() {
       const user = userCredential.user;
       console.log('Email Sign-In Successful, User ID:', user.uid);
       Alert.alert('Success', 'Signed in successfully!');
-      router.replace('/home'); // Navigate to Home after successful sign-in
+      router.replace('/Dashboard'); // Navigate to Home after successful sign-in
     } catch (error) {
       console.error('Sign In Error:', error);
       Alert.alert('Sign-In Error', error.message);
