@@ -276,129 +276,94 @@ function MyRecipes() {
     }
   };
 
+  // Check and request permissions
   const checkPermissions = async () => {
     try {
-      const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
-      return status === 'granted';
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'You need to grant permission to access the media library.');
+        return false;
+      }
+      return true;
     } catch (error) {
-      console.error('Error checking permissions:', error);
-      Alert.alert('Permission Error', 'Failed to check media library permissions.');
+      console.error('Error checking or requesting permissions:', error);
+      Alert.alert('Permission Error', 'Failed to check or request media library permissions.');
       return false;
     }
   };
 
+  // Function to pick an image
   const pickImage = async () => {
     try {
-      // Reset previous image
-      setNewRecipeImage(null);
-
       const hasPermission = await checkPermissions();
-      if (!hasPermission) {
-        Alert.alert(
-          'Permission Required',
-          'We need access to your photo library to upload images.'
-        );
-        return;
-      }
+      if (!hasPermission) return;
 
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.5,
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Image selection only
+        allowsEditing: true, // Allow editing
+        aspect: [4, 3], // Adjust aspect ratio as per your requirements
+        quality: 0.5, // Compress quality to reduce file size
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const imageUri = result.assets[0].uri;
-
-        // Store the local URI
-        setNewRecipeImage(imageUri);
-      } else {
-        console.log('Image selection canceled or no assets.');
+        setNewRecipeImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error in pickImage:', error);
-      Alert.alert('Error', 'An error occurred while trying to pick the image.');
+      console.error('Error selecting image:', error);
+      Alert.alert('Error', 'An error occurred while trying to pick an image.');
     }
   };
 
   const pickVideo = async () => {
     try {
-      // Reset previous video and thumbnail
-      setNewRecipeVideo(null);
-      setNewRecipeVideoThumbnail(null);
-      setUploadProgress(0);
-
       const hasPermission = await checkPermissions();
-      if (!hasPermission) {
-        Alert.alert(
-          'Permission Required',
-          'We need access to your photo library to upload videos.'
-        );
-        return;
-      }
-
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-        allowsEditing: true,
+      if (!hasPermission) return;
+  
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos, // Video selection only
+        allowsEditing: true, // Allow editing
+        quality: 0.7, // Adjust video quality/compression as needed
       });
-
+  
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const videoAsset = result.assets[0];
-        const videoUri = videoAsset.uri;
-
-        // Get video duration using Audio
-        try {
-          const durationMillis = await getVideoDuration(videoUri);
-          const durationSeconds = durationMillis / 1000;
-
-          // Limit video duration to 90 seconds
-          if (durationSeconds > 90) {
-            Alert.alert('Video Too Long', 'Please select a video shorter than 90 seconds.');
-            return;
-          }
-        } catch (error) {
-          console.error('Error getting video duration:', error);
-          Alert.alert('Error', 'Failed to get video duration.');
-          return;
+        const videoUri = result.assets[0].uri;
+  
+        // Check the video duration
+        const duration = await getVideoDuration(videoUri);
+  
+        if (duration > 90) {
+          Alert.alert('Video Too Long', 'Please select a video that is 90 seconds or less.');
+          return; // Do not proceed if the video is longer than 90 seconds
         }
-
-        // Get file info to check size
-        const fileInfo = await FileSystem.getInfoAsync(videoUri);
-        const fileSize = fileInfo.size;
-
-        // Limit file size to 100 MB
-        if (fileSize > 100 * 1024 * 1024) {
-          Alert.alert('File Too Large', 'Please select a video smaller than 100 MB.');
-          return;
-        }
-
-        // Store the local URI
+  
+        // Proceed with setting the video and generating the thumbnail
         setNewRecipeVideo(videoUri);
-
-        // Generate thumbnail
-        await generateThumbnail(videoUri);
-      } else {
-        console.log('Video selection canceled or no assets.');
+        generateThumbnail(videoUri);
       }
     } catch (error) {
-      console.error('Error in pickVideo:', error);
-      Alert.alert('Error', 'An error occurred while trying to pick the video.');
+      console.error('Error selecting video:', error);
+      Alert.alert('Error', 'An error occurred while trying to pick a video.');
     }
   };
-
+  
+  // Function to get the video duration in seconds
   const getVideoDuration = async (uri) => {
-    const { sound } = await Audio.Sound.createAsync({ uri });
-    const status = await sound.getStatusAsync();
-    const durationMillis = status.durationMillis;
-    await sound.unloadAsync();
-    return durationMillis;
-  };
+    try {
+      const { sound } = await Audio.Sound.createAsync({ uri });
+      const status = await sound.getStatusAsync();
+      const durationMillis = status.durationMillis;
+      await sound.unloadAsync(); // Unload the sound to free up resources
+      return durationMillis / 1000; // Convert milliseconds to seconds
+    } catch (error) {
+      console.error('Error getting video duration:', error);
+      return 0; // Return 0 in case of an error
+    }
+  };  
 
   const generateThumbnail = async (videoUri) => {
     try {
       const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, {
-        time: 1000,
+        time: 1000, // 1 second into the video
       });
       setNewRecipeVideoThumbnail(uri);
     } catch (e) {
@@ -406,6 +371,7 @@ function MyRecipes() {
       Alert.alert('Error', 'Failed to generate video thumbnail.');
     }
   };
+  
 
   /**
    * Function to upload an image to Firebase Storage
@@ -956,6 +922,7 @@ function MyRecipes() {
           <Text style={styles.plusSign}>+</Text>
         )}
       </TouchableOpacity>
+
 
       {(isSubmitting || uploadProgress > 0) && (
         <View style={styles.progressContainer}>
