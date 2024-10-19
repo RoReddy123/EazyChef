@@ -1399,6 +1399,7 @@ const styles = StyleSheet.create({
   closeButton: {
     alignSelf: 'flex-end',
     marginBottom: 10,
+    marginTop: 23,
   },
   closeButtonText: {
     color: '#007bff',
