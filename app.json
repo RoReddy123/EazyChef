@@ -14,7 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ronan123.EazyChef"
+      "bundleIdentifier": "com.ronan123.EazyChef",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app requires access to your photo library to select and upload images and videos.",
+        "NSCameraUsageDescription": "This app requires access to your camera to take photos and videos.",
+        "NSPhotoLibraryAddUsageDescription": "This app requires permission to save photos and videos to your photo library."
+      },
+      "deploymentTarget": "12.0"
     },
     "android": {
       "adaptiveIcon": {

@@ -41,8 +41,13 @@ import * as FileSystem from 'expo-file-system';
 import { Audio } from 'expo-av';
 import { searchIngredients, getNutritionData } from '../services/USDAService';
 import RecipeModal from './RecipeModal';
+import * as MediaLibrary from 'expo-media-library'; // If not already imported
 
 const { width } = Dimensions.get('window');
+
+// Define maximum video size and duration
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200 MB
+const MAX_VIDEO_DURATION = 300; // 300 seconds = 5 minutes
 
 function MyRecipes() {
   const router = useRouter();
@@ -157,6 +162,35 @@ function MyRecipes() {
   const [searchLoading, setSearchLoading] = useState(false);
 
   const [apiLimitReached, setApiLimitReached] = useState(false);
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      try {
+        // Request Media Library Permissions
+        const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (mediaLibraryStatus.status !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'This app needs access to your photo library to select and upload images and videos.'
+          );
+        }
+
+        // Request Camera Permissions
+        const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+        if (cameraStatus.status !== 'granted') {
+          Alert.alert(
+            'Camera Permission Required',
+            'This app needs access to your camera to take photos and videos.'
+          );
+        }
+      } catch (error) {
+        console.error('Error requesting permissions:', error);
+        Alert.alert('Permissions Error', 'Failed to request permissions.');
+      }
+    };
+
+    requestPermissions();
+  }, []);
 
   // Listen for authentication state changes and store the user
   useEffect(() => {
@@ -276,77 +310,130 @@ function MyRecipes() {
     }
   };
 
-  // Check and request permissions
-  const checkPermissions = async () => {
+  /**
+   * Function to check the file size of a given URI
+   * @param {string} uri - The local URI of the file
+   * @returns {number} - The size of the file in bytes
+   */
+  const checkFileSize = async (uri) => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'You need to grant permission to access the media library.');
-        return false;
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      if (fileInfo.exists) {
+        return fileInfo.size; // Size in bytes
+      } else {
+        throw new Error('File does not exist');
       }
-      return true;
     } catch (error) {
-      console.error('Error checking or requesting permissions:', error);
-      Alert.alert('Permission Error', 'Failed to check or request media library permissions.');
-      return false;
+      console.error('Error getting file size:', error);
+      throw error;
     }
   };
 
   // Function to pick an image
   const pickImage = async () => {
     try {
-      const hasPermission = await checkPermissions();
-      if (!hasPermission) return;
+      // Check Media Library Permissions
+      const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (newStatus !== 'granted') {
+          Alert.alert(
+            'Permission Denied',
+            'Cannot access photo library. Please enable permissions in settings.'
+          );
+          return;
+        }
+      }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Image selection only
-        allowsEditing: true, // Allow editing
-        aspect: [4, 3], // Adjust aspect ratio as per your requirements
-        quality: 0.5, // Compress quality to reduce file size
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setNewRecipeImage(result.assets[0].uri);
+        const imageUri = result.assets[0].uri;
+        setNewRecipeImage(imageUri);
+      } else {
+        console.log('Image selection canceled or no assets.');
       }
     } catch (error) {
-      console.error('Error selecting image:', error);
-      Alert.alert('Error', 'An error occurred while trying to pick an image.');
+      console.error('Error in pickImage:', error);
+      Alert.alert('Error', 'An error occurred while trying to pick the image.');
     }
   };
 
   const pickVideo = async () => {
     try {
-      const hasPermission = await checkPermissions();
-      if (!hasPermission) return;
-  
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos, // Video selection only
-        allowsEditing: true, // Allow editing
-        quality: 0.7, // Adjust video quality/compression as needed
-      });
-  
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const videoUri = result.assets[0].uri;
-  
-        // Check the video duration
-        const duration = await getVideoDuration(videoUri);
-  
-        if (duration > 90) {
-          Alert.alert('Video Too Long', 'Please select a video that is 90 seconds or less.');
-          return; // Do not proceed if the video is longer than 90 seconds
+      // Check Media Library Permissions
+      const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (newStatus !== 'granted') {
+          Alert.alert(
+            'Permission Denied',
+            'Cannot access photo library. Please enable permissions in settings.'
+          );
+          return;
         }
-  
-        // Proceed with setting the video and generating the thumbnail
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const videoAsset = result.assets[0];
+        const videoUri = videoAsset.uri;
+
+        // Check file size
+        const fileSize = await checkFileSize(videoUri);
+        if (fileSize > MAX_VIDEO_SIZE) {
+          Alert.alert('Video Too Large', 'Please select a video smaller than 200 MB.');
+          return;
+        }
+
+        // Get video duration using Audio
+        try {
+          const durationSeconds = await getVideoDuration(videoUri);
+
+          // Limit video duration to MAX_VIDEO_DURATION seconds
+          if (durationSeconds > MAX_VIDEO_DURATION) {
+            Alert.alert(
+              'Video Too Long',
+              `Please select a video shorter than ${Math.floor(
+                MAX_VIDEO_DURATION / 60
+              )} minutes.`
+            );
+            return;
+          }
+        } catch (error) {
+          console.error('Error getting video duration:', error);
+          Alert.alert('Error', 'Failed to get video duration.');
+          return;
+        }
+
         setNewRecipeVideo(videoUri);
-        generateThumbnail(videoUri);
+
+        // Generate thumbnail from video
+        await generateThumbnail(videoUri);
+      } else {
+        console.log('Video selection canceled or no assets.');
       }
     } catch (error) {
-      console.error('Error selecting video:', error);
-      Alert.alert('Error', 'An error occurred while trying to pick a video.');
+      console.error('Error in pickVideo:', error);
+      Alert.alert('Error', 'An error occurred while trying to pick the video.');
     }
   };
-  
-  // Function to get the video duration in seconds
+
+  /**
+   * Function to get the video duration in seconds
+   * @param {string} uri - The local URI of the video
+   * @returns {number} - Duration in seconds
+   */
   const getVideoDuration = async (uri) => {
     try {
       const { sound } = await Audio.Sound.createAsync({ uri });
@@ -358,7 +445,7 @@ function MyRecipes() {
       console.error('Error getting video duration:', error);
       return 0; // Return 0 in case of an error
     }
-  };  
+  };
 
   const generateThumbnail = async (videoUri) => {
     try {
@@ -371,7 +458,6 @@ function MyRecipes() {
       Alert.alert('Error', 'Failed to generate video thumbnail.');
     }
   };
-  
 
   /**
    * Function to upload an image to Firebase Storage
@@ -381,12 +467,6 @@ function MyRecipes() {
    */
   const uploadImageAsync = async (uri, progressCallback) => {
     try {
-      const user = auth.currentUser;
-
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
       const response = await fetch(uri);
       const blob = await response.blob();
 
@@ -397,7 +477,6 @@ function MyRecipes() {
         uploadTask.on(
           'state_changed',
           (snapshot) => {
-            // Monitor progress
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             progressCallback(progress);
             console.log(`Image upload is ${progress}% done`);
@@ -408,7 +487,6 @@ function MyRecipes() {
             reject(error);
           },
           async () => {
-            blob.close && blob.close();
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             console.log('Image Download URL obtained:', downloadURL);
             resolve(downloadURL);
@@ -430,25 +508,8 @@ function MyRecipes() {
    */
   const uploadVideoAsync = async (uri, progressCallback) => {
     try {
-      const user = auth.currentUser;
-
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const blob = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function () {
-          resolve(xhr.response);
-        };
-        xhr.onerror = function (e) {
-          console.error('XHR error', e);
-          reject(new TypeError('Network request failed'));
-        };
-        xhr.responseType = 'blob';
-        xhr.open('GET', uri, true);
-        xhr.send(null);
-      });
+      const response = await fetch(uri);
+      const blob = await response.blob();
 
       const storageRef = ref(storage, `videos/${Date.now()}`);
       const uploadTask = uploadBytesResumable(storageRef, blob);
@@ -457,18 +518,16 @@ function MyRecipes() {
         uploadTask.on(
           'state_changed',
           (snapshot) => {
-            // Monitor progress
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             progressCallback(progress);
             console.log(`Video upload is ${progress}% done`);
           },
           (error) => {
             console.error('Upload error:', error);
-            Alert.alert('Upload Error', 'Failed to upload video.');
+            Alert.alert('Upload Error', `Failed to upload video: ${error.message}`);
             reject(error);
           },
           async () => {
-            blob.close && blob.close();
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             console.log('Video Download URL obtained:', downloadURL);
             resolve(downloadURL);
@@ -923,7 +982,6 @@ function MyRecipes() {
         )}
       </TouchableOpacity>
 
-
       {(isSubmitting || uploadProgress > 0) && (
         <View style={styles.progressContainer}>
           <Text>Uploading: {Math.round(uploadProgress)}%</Text>
@@ -1008,30 +1066,31 @@ function MyRecipes() {
                 }
               }}
             />
-            {focusedIngredientIndex !== null && Array.isArray(searchResults) && searchResults.length > 0 && (
-              <TouchableWithoutFeedback onPress={() => setFocusedIngredientIndex(null)}>
-                <View style={styles.suggestionsContainer}>
-                  {searchLoading ? (
-                    <ActivityIndicator size="small" color="#007bff" />
-                  ) : (
-                    <ScrollView
-                      keyboardShouldPersistTaps="handled"
-                      nestedScrollEnabled={true}
-                    >
-                      {searchResults.map((item) => (
-                        <TouchableOpacity
-                          key={item.fdcId.toString()}
-                          onPress={() => handleSelectSuggestion(item)}
-                          style={styles.suggestionItem}
-                        >
-                          <Text>{item.description ? String(item.description) : 'Unknown Ingredient'}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
-                </View>
-              </TouchableWithoutFeedback>
-            )}
+            {focusedIngredientIndex !== null &&
+              Array.isArray(searchResults) &&
+              searchResults.length > 0 && (
+                <TouchableWithoutFeedback onPress={() => setFocusedIngredientIndex(null)}>
+                  <View style={styles.suggestionsContainer}>
+                    {searchLoading ? (
+                      <ActivityIndicator size="small" color="#007bff" />
+                    ) : (
+                      <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
+                        {searchResults.map((item) => (
+                          <TouchableOpacity
+                            key={item.fdcId.toString()}
+                            onPress={() => handleSelectSuggestion(item)}
+                            style={styles.suggestionItem}
+                          >
+                            <Text>
+                              {item.description ? String(item.description) : 'Unknown Ingredient'}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    )}
+                  </View>
+                </TouchableWithoutFeedback>
+              )}
           </View>
 
           <TextInput
