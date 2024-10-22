@@ -14,13 +14,10 @@ import {
   ActivityIndicator,
   Dimensions,
   Keyboard,
-  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import RNPickerSelect from 'react-native-picker-select';
+import DropDownPicker from 'react-native-dropdown-picker';
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import debounce from 'lodash.debounce';
 import {
   collection,
@@ -42,6 +39,9 @@ import { Audio } from 'expo-av';
 import { searchIngredients, getNutritionData } from '../services/USDAService';
 import RecipeModal from './RecipeModal';
 import * as MediaLibrary from 'expo-media-library'; // If not already imported
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { useRouter } from 'expo-router'; // Ensure useRouter is imported
 
 const { width } = Dimensions.get('window');
 
@@ -66,13 +66,14 @@ function MyRecipes() {
     {
       description: '',
       quantity: '',
-      unit: '',
+      unit: '', // Initialize to an empty string
       nutrition: { calories: 0, protein: 0, fat: 0, carbohydrates: 0 },
+      unitOpen: false, // Add this for DropDownPicker
     },
   ]);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null); // Initialize to null
   const [selectedMealTimes, setSelectedMealTimes] = useState([]);
-  const [selectedCuisine, setSelectedCuisine] = useState('');
+  const [selectedCuisine, setSelectedCuisine] = useState(null); // Initialize to null
   const [activeTab, setActiveTab] = useState('under_review');
   const [recipeDescriptions, setRecipeDescriptions] = useState([]);
   const [currentRecipe, setCurrentRecipe] = useState(null);
@@ -85,7 +86,7 @@ function MyRecipes() {
   // New States for Cooking Time and Recipe Difficulty
   const [cookingTimeHours, setCookingTimeHours] = useState('');
   const [cookingTimeMinutes, setCookingTimeMinutes] = useState('');
-  const [recipeDifficulty, setRecipeDifficulty] = useState('');
+  const [recipeDifficulty, setRecipeDifficulty] = useState(null); // Initialize to null
 
   // New State for Total Nutrition
   const [totalNutrition, setTotalNutrition] = useState({
@@ -117,30 +118,6 @@ function MyRecipes() {
     'Sugar-free',
   ];
 
-  const unitOptions = [
-    { label: 'Grams', value: 'grams' },
-    { label: 'Kilograms', value: 'kilograms' },
-    { label: 'Liters', value: 'liters' },
-    { label: 'Milliliters', value: 'milliliters' },
-    { label: 'Cups', value: 'cups' },
-    { label: 'Tablespoons', value: 'tablespoons' },
-    { label: 'Teaspoons', value: 'teaspoons' },
-    { label: 'Ounces', value: 'ounces' },
-    { label: 'Pounds', value: 'pounds' },
-  ];
-
-  const categories = [
-    { label: 'Appetizers', value: 'Appetizers' },
-    { label: 'Small Bites', value: 'Small Bites' },
-    { label: 'Quick Meals', value: 'Quick Meals' },
-    { label: 'Main Meals', value: 'Main Meals' },
-    { label: 'Vegetarian/Vegan', value: 'Vegetarian/Vegan' },
-    { label: 'Party/Holiday', value: 'Party/Holiday' },
-    { label: 'Desserts', value: 'Desserts' },
-    { label: 'Refreshments', value: 'Refreshments' },
-    { label: 'Cocktails', value: 'Cocktails' },
-  ];
-
   const mealTimes = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack'];
 
   const cuisines = [
@@ -162,6 +139,79 @@ function MyRecipes() {
   const [searchLoading, setSearchLoading] = useState(false);
 
   const [apiLimitReached, setApiLimitReached] = useState(false);
+
+  // DropDownPicker state variables
+  const [recipeDifficultyOpen, setRecipeDifficultyOpen] = useState(false);
+  const [recipeDifficultyItems, setRecipeDifficultyItems] = useState([
+    { label: 'Easy', value: 'Easy' },
+    { label: 'Medium', value: 'Medium' },
+    { label: 'Hard', value: 'Hard' },
+  ]);
+
+  const [unitItems, setUnitItems] = useState([
+    { label: 'Grams', value: 'grams' },
+    { label: 'Kilograms', value: 'kilograms' },
+    { label: 'Liters', value: 'liters' },
+    { label: 'Milliliters', value: 'milliliters' },
+    { label: 'Cups', value: 'cups' },
+    { label: 'Tablespoons', value: 'tablespoons' },
+    { label: 'Teaspoons', value: 'teaspoons' },
+    { label: 'Ounces', value: 'ounces' },
+    { label: 'Pounds', value: 'pounds' },
+  ]);
+
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryItems, setCategoryItems] = useState([
+    { label: 'Appetizers', value: 'Appetizers' },
+    { label: 'Small Bites', value: 'Small Bites' },
+    { label: 'Quick Meals', value: 'Quick Meals' },
+    { label: 'Main Meals', value: 'Main Meals' },
+    { label: 'Vegetarian/Vegan', value: 'Vegetarian/Vegan' },
+    { label: 'Party/Holiday', value: 'Party/Holiday' },
+    { label: 'Desserts', value: 'Desserts' },
+    { label: 'Refreshments', value: 'Refreshments' },
+    { label: 'Cocktails', value: 'Cocktails' },
+  ]);
+
+  const [cuisineOpen, setCuisineOpen] = useState(false);
+  const [cuisineItems, setCuisineItems] = useState(cuisines);
+
+  // Close all dropdowns when a new one is opened to prevent overlap
+  const onRecipeDifficultyOpen = useCallback(() => {
+    setCategoryOpen(false);
+    setCuisineOpen(false);
+    setIngredients((prevIngredients) =>
+      prevIngredients.map((ingredient) => ({ ...ingredient, unitOpen: false }))
+    );
+  }, []);
+
+  const onCategoryOpen = useCallback(() => {
+    setRecipeDifficultyOpen(false);
+    setCuisineOpen(false);
+    setIngredients((prevIngredients) =>
+      prevIngredients.map((ingredient) => ({ ...ingredient, unitOpen: false }))
+    );
+  }, []);
+
+  const onCuisineOpen = useCallback(() => {
+    setRecipeDifficultyOpen(false);
+    setCategoryOpen(false);
+    setIngredients((prevIngredients) =>
+      prevIngredients.map((ingredient) => ({ ...ingredient, unitOpen: false }))
+    );
+  }, []);
+
+  // Close ingredient unit dropdowns when others are opened
+  const onIngredientUnitOpen = (index) => {
+    setRecipeDifficultyOpen(false);
+    setCategoryOpen(false);
+    setCuisineOpen(false);
+    setIngredients((prevIngredients) =>
+      prevIngredients.map((ingredient, idx) =>
+        idx === index ? { ...ingredient, unitOpen: true } : { ...ingredient, unitOpen: false }
+      )
+    );
+  };
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -557,8 +607,9 @@ function MyRecipes() {
       {
         description: '',
         quantity: '',
-        unit: '',
+        unit: '', // Initialize to an empty string
         nutrition: { calories: 0, protein: 0, fat: 0, carbohydrates: 0 },
+        unitOpen: false, // Add this for DropDownPicker
       },
     ]);
   };
@@ -819,16 +870,17 @@ function MyRecipes() {
       {
         description: '',
         quantity: '',
-        unit: '',
+        unit: '', // Reset to empty string
         nutrition: { calories: 0, protein: 0, fat: 0, carbohydrates: 0 },
+        unitOpen: false, // Reset
       },
     ]);
-    setSelectedCategory('');
+    setSelectedCategory(null);
     setSelectedMealTimes([]);
-    setSelectedCuisine('');
+    setSelectedCuisine(null);
     setCookingTimeHours('');
     setCookingTimeMinutes('');
-    setRecipeDifficulty('');
+    setRecipeDifficulty(null); // Reset to null
     setFocusedIngredientIndex(null);
     setSearchQuery('');
     setSearchResults([]);
@@ -1026,73 +1078,50 @@ function MyRecipes() {
 
       {/* Recipe Difficulty Picker */}
       <Text style={styles.label}>Rate the recipe difficulty *</Text>
-      <RNPickerSelect
-        style={pickerSelectStyles}
-        placeholder={{ label: 'Select Difficulty', value: '' }}
-        items={[
-          { label: 'Easy', value: 'Easy' },
-          { label: 'Medium', value: 'Medium' },
-          { label: 'Hard', value: 'Hard' },
-        ]}
+      <DropDownPicker
+        open={recipeDifficultyOpen}
         value={recipeDifficulty}
-        onValueChange={setRecipeDifficulty}
+        items={recipeDifficultyItems}
+        setOpen={setRecipeDifficultyOpen}
+        setValue={setRecipeDifficulty}
+        setItems={setRecipeDifficultyItems}
+        placeholder="Select Difficulty"
+        containerStyle={{ marginBottom: 10 }}
+        zIndex={3000}
+        zIndexInverse={1000}
+        listMode="MODAL" // **Added listMode="MODAL"**
+        onOpen={onRecipeDifficultyOpen}
       />
 
-      {/* Ingredients Section with Search Suggestions */}
+      {/* Ingredients Section with Unit Picker */}
       <Text style={styles.label}>Ingredients</Text>
       {ingredients.map((ingredient, index) => (
         <View
-          key={index}
+          key={`ingredient-${index}`} // Ensure unique key
           style={[
             styles.ingredientRow,
             focusedIngredientIndex === index ? { zIndex: 2 } : { zIndex: 1 },
           ]}
         >
-          {/* Ingredient Name with Search Suggestions */}
-          <View style={{ flex: 2, position: 'relative' }}>
-            <TextInput
-              style={styles.ingredientInput}
-              placeholder="description"
-              value={ingredient.description}
-              onChangeText={(text) => {
-                handleIngredientChange(text, index, 'description');
-                handleQueryChange(text, index);
-              }}
-              onFocus={() => setFocusedIngredientIndex(index)}
-              onBlur={() => {
-                if (focusedIngredientIndex === index) {
-                  setFocusedIngredientIndex(null);
-                  setSearchResults([]);
-                }
-              }}
-            />
-            {focusedIngredientIndex !== null &&
-              Array.isArray(searchResults) &&
-              searchResults.length > 0 && (
-                <TouchableWithoutFeedback onPress={() => setFocusedIngredientIndex(null)}>
-                  <View style={styles.suggestionsContainer}>
-                    {searchLoading ? (
-                      <ActivityIndicator size="small" color="#007bff" />
-                    ) : (
-                      <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
-                        {searchResults.map((item) => (
-                          <TouchableOpacity
-                            key={item.fdcId.toString()}
-                            onPress={() => handleSelectSuggestion(item)}
-                            style={styles.suggestionItem}
-                          >
-                            <Text>
-                              {item.description ? String(item.description) : 'Unknown Ingredient'}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    )}
-                  </View>
-                </TouchableWithoutFeedback>
-              )}
-          </View>
+          {/* Ingredient Description */}
+          <TextInput
+            style={styles.ingredientInput}
+            placeholder="Description"
+            value={ingredient.description}
+            onChangeText={(text) => {
+              handleIngredientChange(text, index, 'description');
+              handleQueryChange(text, index);
+            }}
+            onFocus={() => setFocusedIngredientIndex(index)}
+            onBlur={() => {
+              if (focusedIngredientIndex === index) {
+                setFocusedIngredientIndex(null);
+                setSearchResults([]);
+              }
+            }}
+          />
 
+          {/* Quantity */}
           <TextInput
             style={styles.quantityInput}
             placeholder="Qty"
@@ -1100,16 +1129,42 @@ function MyRecipes() {
             onChangeText={(text) => handleIngredientChange(text, index, 'quantity')}
             keyboardType="numeric"
           />
-          <RNPickerSelect
-            style={pickerSelectStyles}
-            placeholder={{ label: 'Unit', value: '' }}
-            items={unitOptions}
+
+          {/* Unit Picker */}
+          <DropDownPicker
+            open={ingredient.unitOpen}
             value={ingredient.unit}
-            onValueChange={(value) => handleIngredientChange(value, index, 'unit')}
-            disabled={apiLimitReached} // Disable picker if API limit is reached
+            items={unitItems}
+            setOpen={(open) => {
+              if (open) {
+                onIngredientUnitOpen(index);
+              } else {
+                setIngredients((prevIngredients) =>
+                  prevIngredients.map((ing, idx) =>
+                    idx === index ? { ...ing, unitOpen: false } : ing
+                  )
+                );
+              }
+            }}
+            setValue={(callback) => {
+              const updatedIngredients = [...ingredients];
+              updatedIngredients[index].unit = callback(updatedIngredients[index].unit);
+              setIngredients(updatedIngredients);
+              handleIngredientChange(updatedIngredients[index].unit, index, 'unit');
+            }}
+            setItems={setUnitItems}
+            placeholder="Unit"
+            containerStyle={{ flex: 1, height: 40 }}
+            style={{ backgroundColor: '#fafafa' }}
+            dropDownContainerStyle={{ backgroundColor: '#fafafa' }}
+            zIndex={1000 - index}
+            zIndexInverse={1000 + index}
+            listMode="MODAL" // Ensure this is set to "MODAL"
+            onOpen={() => onIngredientUnitOpen(index)}
           />
         </View>
       ))}
+
       <Button title="Add Ingredient" onPress={addIngredient} disabled={apiLimitReached} />
       {apiLimitReached && (
         <View style={styles.apiLimitBanner}>
@@ -1135,12 +1190,19 @@ function MyRecipes() {
 
       {/* Category Picker */}
       <Text style={styles.label}>Category *</Text>
-      <RNPickerSelect
-        style={pickerSelectStyles}
-        placeholder={{ label: 'Select Category', value: '' }}
-        items={categories}
+      <DropDownPicker
+        open={categoryOpen}
         value={selectedCategory}
-        onValueChange={setSelectedCategory}
+        items={categoryItems}
+        setOpen={setCategoryOpen}
+        setValue={setSelectedCategory}
+        setItems={setCategoryItems}
+        placeholder="Select Category"
+        containerStyle={{ marginBottom: 10 }}
+        zIndex={2000}
+        zIndexInverse={1000}
+        listMode="MODAL" // **Added listMode="MODAL"**
+        onOpen={onCategoryOpen}
       />
 
       {/* Meal Times Toggle Buttons */}
@@ -1170,12 +1232,19 @@ function MyRecipes() {
 
       {/* Cuisine Picker */}
       <Text style={styles.label}>Cuisine *</Text>
-      <RNPickerSelect
-        style={pickerSelectStyles}
-        placeholder={{ label: 'Select Cuisine', value: '' }}
-        items={cuisines}
+      <DropDownPicker
+        open={cuisineOpen}
         value={selectedCuisine}
-        onValueChange={setSelectedCuisine}
+        items={cuisineItems}
+        setOpen={setCuisineOpen}
+        setValue={setSelectedCuisine}
+        setItems={setCuisineItems}
+        placeholder="Select Cuisine"
+        containerStyle={{ marginBottom: 10 }}
+        zIndex={1000}
+        zIndexInverse={2000}
+        listMode="MODAL" // **Added listMode="MODAL"**
+        onOpen={onCuisineOpen}
       />
 
       {/* Dietary Preferences Toggle Buttons */}
@@ -1395,14 +1464,7 @@ function MyRecipes() {
       </TouchableOpacity>
 
       {/* Recipe Modal - Viewing Recipe Details */}
-      <RecipeModal
-        visible={viewModalVisible}
-        onClose={() => {
-          setViewModalVisible(false);
-          setCurrentRecipe(null);
-        }}
-        recipe={currentRecipe}
-      />
+      {renderRecipeDetailsModal()}
 
       {/* Add Recipe Modal */}
       <Modal
@@ -1419,32 +1481,6 @@ function MyRecipes() {
     </View>
   );
 }
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    padding: 10,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    color: '#000',
-    marginBottom: 10,
-  },
-  inputAndroid: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    padding: 8,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    color: '#000',
-    marginBottom: 10,
-  },
-  placeholder: {
-    color: '#888',
-  },
-});
 
 const styles = StyleSheet.create({
   container: {
@@ -1565,23 +1601,6 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     textAlign: 'center',
   },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 50 : 45,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    maxHeight: 150,
-    zIndex: 3,
-    elevation: 3,
-  },
-  suggestionItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
   mealTimeOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1645,7 +1664,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     justifyContent: 'center',
-    zIndex: 10,
+    zIndex: 1000, // Increased zIndex to ensure it stays above other components
   },
   segmentButton: {
     paddingVertical: 10,
