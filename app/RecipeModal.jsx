@@ -1,5 +1,3 @@
-// RecipeModal.js
-
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -11,6 +9,7 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  Share, // Import Share API
 } from 'react-native';
 import { AntDesign, Entypo, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -74,6 +73,65 @@ const RecipeModal = ({ visible, onClose, recipe, onSave, loading }) => {
   const imageUri = recipe?.imageUrl || recipe?.image;
   const videoUrl = recipe?.videoUrl;
   const audioUrl = recipe?.audioUrl; // Assuming `audioUrl` is part of the recipe object
+
+  // Share handler
+  const handleShare = async () => {
+    try {
+      const message = constructShareMessage(recipe);
+      await Share.share({
+        message,
+      });
+    } catch (error) {
+      console.error('Error sharing recipe:', error);
+    }
+  };
+
+  // Construct share message
+  const constructShareMessage = (recipe) => {
+    let message = `${recipe.title}\n\n`;
+
+    if (recipe.description) {
+      message += `${recipe.description}\n\n`;
+    }
+
+    if (recipe.ingredients && recipe.ingredients.length > 0) {
+      message += 'Ingredients:\n';
+      recipe.ingredients.forEach((ingredient) => {
+        if (typeof ingredient === 'string') {
+          message += `- ${ingredient}\n`;
+        } else {
+          message += `- ${ingredient.quantity || ''} ${ingredient.unit || ''} ${ingredient.description}\n`;
+        }
+      });
+      message += '\n';
+    }
+
+    if (recipe.instructions && recipe.instructions.length > 0) {
+      message += 'Instructions:\n';
+      recipe.instructions.forEach((instruction, index) => {
+        message += `${index + 1}. ${instruction}\n`;
+      });
+      message += '\n';
+    }
+
+    if (recipe.totalNutrition) {
+      message += 'Nutrition:\n';
+      Object.entries(recipe.totalNutrition).forEach(([key, value]) => {
+        message += `${capitalizeFirstLetter(key)}: ${roundToTenth(value)}\n`;
+      });
+      message += '\n';message += '\n';
+    }
+
+    if (recipe.imageUrl) {
+      message += `Image: ${recipe.imageUrl}\n\n`;
+    }
+
+    if (recipe.videoUrl) {
+      message += `Video: ${recipe.videoUrl}\n`;
+    }
+
+    return message;
+  };
 
   const handlePlayVideo = () => {
     if (videoUrl) {
@@ -148,7 +206,7 @@ const RecipeModal = ({ visible, onClose, recipe, onSave, loading }) => {
             <View style={styles.dragHandle} />
           </View>
 
-          {/* Header with Close Button */}
+          {/* Header with Close and Share Buttons */}
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.closeButton}
@@ -161,6 +219,14 @@ const RecipeModal = ({ visible, onClose, recipe, onSave, loading }) => {
             <Text style={styles.recipeTitle}>
               {recipe?.title || 'Recipe Title'}
             </Text>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={handleShare}
+              accessible={true}
+              accessibilityLabel="Share Recipe"
+            >
+              <Feather name="share-2" size={24} color="#333" />
+            </TouchableOpacity>
           </View>
 
           <ScrollView
@@ -272,12 +338,20 @@ const RecipeModal = ({ visible, onClose, recipe, onSave, loading }) => {
                 <Text style={styles.sectionTitle}>Ingredients:</Text>
                 {recipe.ingredients.map((ingredient, index) => (
                   <View key={index} style={styles.ingredientContainer}>
-                    <Text style={styles.ingredientName}>
-                      {ingredient.description || 'Ingredient'}
-                    </Text>
-                    <Text style={styles.ingredientDetails}>
-                      {ingredient.quantity || ''} {ingredient.unit || ''}
-                    </Text>
+                    {typeof ingredient === 'string' ? (
+                      // Ingredient is a string
+                      <Text style={styles.ingredientName}>{ingredient}</Text>
+                    ) : (
+                      // Ingredient is an object
+                      <>
+                        <Text style={styles.ingredientName}>
+                          {ingredient.description || 'Ingredient'}
+                        </Text>
+                        <Text style={styles.ingredientDetails}>
+                          {ingredient.quantity || ''} {ingredient.unit || ''}
+                        </Text>
+                      </>
+                    )}
                   </View>
                 ))}
               </View>
@@ -407,6 +481,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   closeButton: {
+    padding: 5,
+  },
+  shareButton: {
     padding: 5,
   },
   recipeTitle: {
