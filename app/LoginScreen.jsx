@@ -120,7 +120,7 @@ export default function SignInScreen() {
         <Text style={styles.link}>Forgot your password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.replace('/sign-up')}>
+      <TouchableOpacity onPress={() => router.replace('/SignUp')}>
         <Text style={styles.link}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
     </View>
