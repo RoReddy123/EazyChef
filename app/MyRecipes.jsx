@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -42,6 +42,7 @@ import * as MediaLibrary from 'expo-media-library'; // If not already imported
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useRouter } from 'expo-router'; // Ensure useRouter is imported
+import Popover from 'react-native-popover-view'; // Import Popover
 
 const { width } = Dimensions.get('window');
 
@@ -212,6 +213,12 @@ function MyRecipes() {
       )
     );
   };
+
+  // Remove modal-related state and functions
+  // Removed: visibleSection, modalPosition, toggleInfoModal, renderInfoModal
+
+  // References for Popover are no longer needed
+  // Removed all refs: titleButtonRef, descriptionButtonRef, etc.
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -992,7 +999,24 @@ function MyRecipes() {
 
       <Text style={styles.sectionTitle}>Add New Recipe</Text>
 
-      <Text style={styles.label}>Title *</Text>
+      {/* Title Section with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Title *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Give your recipe an unique title. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'Creamy Tomato Pasta'</Text>.
+          </Text>
+        </Popover>
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Recipe Title"
@@ -1000,7 +1024,24 @@ function MyRecipes() {
         onChangeText={setNewRecipeTitle}
       />
 
-      <Text style={styles.label}>Description *</Text>
+      {/* Description Section with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Description *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Provide a brief summary of the dish. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'A delicious and easy-to-make creamy tomato pasta that is perfect for weeknight dinners'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <TextInput
         style={styles.textArea}
         placeholder="Recipe Description"
@@ -1016,7 +1057,21 @@ function MyRecipes() {
         {newRecipeDescription.length}/{MAX_DESCRIPTION_LENGTH}
       </Text>
 
-      <Text style={styles.label}>Image *</Text>
+      {/* Image Section with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Image *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>Upload an image that best represents your recipe. Make sure it is clear and appetizing.</Text>
+        </Popover>
+      </View>
       <TouchableOpacity style={styles.uploadBox} onPress={pickImage}>
         {newRecipeImage ? (
           <Image source={{ uri: newRecipeImage }} style={styles.previewImage} />
@@ -1025,7 +1080,21 @@ function MyRecipes() {
         )}
       </TouchableOpacity>
 
-      <Text style={styles.label}>Video *</Text>
+      {/* Video Section with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Video *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>Upload a short video demonstrating key steps in preparing the recipe.</Text>
+        </Popover>
+      </View>
       <TouchableOpacity style={styles.uploadBox} onPress={pickVideo}>
         {newRecipeVideoThumbnail ? (
           <Image source={{ uri: newRecipeVideoThumbnail }} style={styles.previewImage} />
@@ -1041,8 +1110,24 @@ function MyRecipes() {
         </View>
       )}
 
-      {/* Serving Size Input */}
-      <Text style={styles.label}>Serving Size *</Text>
+      {/* Serving Size Input with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Serving Size *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Specify the number of servings this recipe makes {' '}
+            <Text style={{ fontStyle: 'italic' }}>(i.e., the number of people it can serve).</Text>
+          </Text>
+        </Popover>
+      </View>
       <TextInput
         style={styles.input}
         placeholder="e.g., 4 servings"
@@ -1051,8 +1136,24 @@ function MyRecipes() {
         keyboardType="default"
       />
 
-      {/* Cooking Time Inputs */}
-      <Text style={styles.label}>How long does your recipe take to cook? *</Text>
+      {/* Cooking Time Inputs with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Cooking Time *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Indicate how long it takes to cook your recipe. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'0 hours and 25 minutes'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <View style={styles.cookingTimeContainer}>
         <View style={styles.cookingTimeInputContainer}>
           <TextInput
@@ -1076,8 +1177,35 @@ function MyRecipes() {
         </View>
       </View>
 
-      {/* Recipe Difficulty Picker */}
-      <Text style={styles.label}>Rate the recipe difficulty *</Text>
+      {/* Recipe Difficulty Picker with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Rate your recipe's difficulty *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Rate the difficulty of the recipe based on cooking experience:
+            {'\n'}
+            <Text>
+              - <Text style={{ fontStyle: 'italic' }}>Easy</Text>: Suitable for beginners, minimal experience required.
+            </Text>
+            {'\n'}
+            <Text>
+              - <Text style={{ fontStyle: 'italic' }}>Medium</Text>: Some cooking experience needed, involves more steps or techniques.
+            </Text>
+            {'\n'}
+            <Text>
+              - <Text style={{ fontStyle: 'italic' }}>Hard</Text>: Advanced level, requires expertise and precision.
+            </Text>
+          </Text>
+        </Popover>
+      </View>
       <DropDownPicker
         open={recipeDifficultyOpen}
         value={recipeDifficulty}
@@ -1093,14 +1221,29 @@ function MyRecipes() {
         onOpen={onRecipeDifficultyOpen}
       />
 
-      {/* Ingredients Section with Unit Picker */}
-      <Text style={styles.label}>Ingredients</Text>
+      {/* Ingredients Section with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Ingredients *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            List the ingredients needed for the recipe, along with quantities and units. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'200g pasta, 1 can of crushed tomatoes, 100ml heavy cream'.</Text>
+          </Text>
+        </Popover>
+      </View>
       {ingredients.map((ingredient, index) => (
         <View
           key={`ingredient-${index}`} // Ensure unique key
           style={[
             styles.ingredientRow,
-            focusedIngredientIndex === index ? { zIndex: 2 } : { zIndex: 1 },
           ]}
         >
           {/* Ingredient Description */}
@@ -1174,8 +1317,28 @@ function MyRecipes() {
         </View>
       )}
 
-      {/* Instructions Section */}
-      <Text style={styles.label}>Instructions *</Text>
+      {/* Instructions Section with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Instructions *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Break down the cooking process into clear, step-by-step instructions. Example: {'\n'}
+            <Text style={{ fontStyle: 'italic' }}>
+              1. Cook the pasta according to package instructions. {'\n'}
+              2. In a pan, sauté garlic, then add crushed tomatoes and cream. {'\n'}
+              3. Mix in the cooked pasta and serve.'
+            </Text>
+          </Text>
+        </Popover>
+      </View>
       {newRecipeInstructions.map((instruction, index) => (
         <TextInput
           key={index}
@@ -1188,8 +1351,24 @@ function MyRecipes() {
       ))}
       <Button title="Add Step" onPress={addInstructionLine} />
 
-      {/* Category Picker */}
-      <Text style={styles.label}>Category *</Text>
+      {/* Category Picker with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Category *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Select the most appropriate category for your recipe. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'Vegetarian/Vegan'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <DropDownPicker
         open={categoryOpen}
         value={selectedCategory}
@@ -1205,8 +1384,24 @@ function MyRecipes() {
         onOpen={onCategoryOpen}
       />
 
-      {/* Meal Times Toggle Buttons */}
-      <Text style={styles.label}>Meal Times *</Text>
+      {/* Meal Times Toggle Buttons with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Meal Times *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Indicate when this recipe is typically served. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'Lunch and Dinner'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <View style={styles.mealTimeOptions}>
         {mealTimes.map((mealTime) => (
           <TouchableOpacity
@@ -1230,8 +1425,24 @@ function MyRecipes() {
         ))}
       </View>
 
-      {/* Cuisine Picker */}
-      <Text style={styles.label}>Cuisine *</Text>
+      {/* Cuisine Picker with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Cuisine *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Identify the cuisine that best represents your recipe. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'Italian'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <DropDownPicker
         open={cuisineOpen}
         value={selectedCuisine}
@@ -1247,8 +1458,24 @@ function MyRecipes() {
         onOpen={onCuisineOpen}
       />
 
-      {/* Dietary Preferences Toggle Buttons */}
-      <Text style={styles.label}>Dietary Preferences</Text>
+      {/* Dietary Preferences Toggle Buttons with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Dietary Preferences *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Highlight any dietary preferences that apply to your recipe. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'Vegetarian'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <View style={styles.optionsContainer}>
         {dietaryOptions.map((option) => (
           <TouchableOpacity
@@ -1272,8 +1499,24 @@ function MyRecipes() {
         ))}
       </View>
 
-      {/* Recipe Descriptions Toggle Buttons */}
-      <Text style={styles.label}>Recipe Descriptions</Text>
+      {/* Recipe Descriptions Toggle Buttons with Tooltip */}
+      <View style={styles.sectionTitleContainer}>
+        <Text style={styles.sectionTitle}>Recipe Descriptions *</Text>
+        <Popover
+          from={
+            <TouchableOpacity>
+              <FontAwesomeIcon name="info-circle" size={20} color="#007bff" />
+            </TouchableOpacity>
+          }
+          placement="auto"
+          popoverStyle={styles.popover}
+        >
+          <Text>
+            Describe key characteristics of your recipe. Example: {' '}
+            <Text style={{ fontStyle: 'italic' }}>'Low fat, high protein'.</Text>
+          </Text>
+        </Popover>
+      </View>
       <View style={styles.optionsContainer}>
         {recipeDescriptionOptions.map((option) => (
           <TouchableOpacity
@@ -1500,10 +1743,16 @@ const styles = StyleSheet.create({
     color: '#007bff',
     fontSize: 16,
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 10,
+    marginTop: 15,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginRight: 5,
   },
   label: {
     fontSize: 16,
@@ -1743,6 +1992,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     borderRadius: 5,
     marginBottom: 20,
+  },
+  popover: {
+    backgroundColor: '#fff', // White background
+    borderColor: '#ccc',     // Light gray border color
+    borderWidth: 2,          // Increased border width
+    padding: 10,             // Padding inside the popover
+    borderRadius: 8,         // Rounded corners
+    // Optional: Add shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    // Optional: Add elevation for Android
+    elevation: 5,
   },
 });
 
