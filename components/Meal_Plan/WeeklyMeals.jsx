@@ -383,10 +383,6 @@ const WeeklyMeals = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Meal Plan</Text>
-        </View>
-
         <View style={styles.weekNav}>
           <TouchableOpacity onPress={goToPreviousWeek} accessible={true} accessibilityLabel="Previous Week">
             <AntDesign name="leftcircle" size={32} color="#007bff" />
@@ -536,10 +532,9 @@ const capitalizeFirstLetter = (str) => {
 // Styles
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 10, backgroundColor: '#F0F8FF' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 10 },
   headerTitle: { fontSize: 24, fontWeight: '700' },
-  weekNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  weekText: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  weekNav: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  weekText: { marginTop: 10, fontSize: 18, fontWeight: '700', textAlign: 'center' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   dayContainer: {
     marginBottom: 20,
