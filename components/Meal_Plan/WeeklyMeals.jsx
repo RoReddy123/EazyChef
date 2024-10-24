@@ -56,14 +56,6 @@ const WeeklyMeals = () => {
   const [mealToReschedule, setMealToReschedule] = useState(null);
   const [newRescheduleDate, setNewRescheduleDate] = useState(new Date());
 
-  // State for Nutrition Totals
-  const [nutritionTotals, setNutritionTotals] = useState({
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fats: 0,
-  });
-
   useEffect(() => {
     if (!user || authLoading) return;
 
@@ -78,12 +70,6 @@ const WeeklyMeals = () => {
         onSnapshot(mealPlanDocRef, async (docSnapshot) => {
           if (docSnapshot.exists()) {
             setMealPlan(docSnapshot.data());
-            setNutritionTotals(docSnapshot.data().nutritionTotals || {
-              calories: 0,
-              protein: 0,
-              carbs: 0,
-              fats: 0,
-            });
           } else {
             // Initialize the document if it doesn't exist
             await setDoc(mealPlanDocRef, {
@@ -92,12 +78,6 @@ const WeeklyMeals = () => {
               dinner: [],
               snack: [],
               dessert: [],
-              nutritionTotals: {
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fats: 0,
-              },
             });
             setMealPlan({
               breakfast: [],
@@ -105,12 +85,6 @@ const WeeklyMeals = () => {
               dinner: [],
               snack: [],
               dessert: [],
-              nutritionTotals: {
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fats: 0,
-              },
             });
           }
         });
@@ -292,16 +266,6 @@ const WeeklyMeals = () => {
         (m) => !(m.recipeId === meal.recipeId && m.date === meal.date)
       );
 
-      const recipe = await fetchRecipeById(meal.recipeId);
-      if (recipe && recipe.nutrition) {
-        updatedMealPlan.nutritionTotals = {
-          calories: Math.max((updatedMealPlan.nutritionTotals.calories || 0) - (recipe.nutrition.calories || 0), 0),
-          protein: Math.max((updatedMealPlan.nutritionTotals.protein || 0) - (recipe.nutrition.protein || 0), 0),
-          carbs: Math.max((updatedMealPlan.nutritionTotals.carbs || 0) - (recipe.nutrition.carbs || 0), 0),
-          fats: Math.max((updatedMealPlan.nutritionTotals.fats || 0) - (recipe.nutrition.fats || 0), 0),
-        };
-      }
-
       await setDoc(mealPlanDocRef, updatedMealPlan);
       Toast.show({
         type: 'success',
@@ -337,8 +301,6 @@ const WeeklyMeals = () => {
       // Add the meal to the new date
       const newMeal = { ...meal, date: newDate };
       updatedMealPlan[meal.mealType].push(newMeal);
-
-      // No change to nutritionTotals since the meal is still in the plan
 
       await setDoc(mealPlanDocRef, updatedMealPlan);
       Toast.show({
@@ -439,26 +401,6 @@ const WeeklyMeals = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.nutritionContainer}>
-          <Text style={styles.nutritionHeader}>Weekly Nutrition Summary</Text>
-          <View style={styles.nutritionRow}>
-            <Text style={styles.nutritionLabel}>Calories:</Text>
-            <Text style={styles.nutritionValue}>{nutritionTotals.calories || 0} kcal</Text>
-          </View>
-          <View style={styles.nutritionRow}>
-            <Text style={styles.nutritionLabel}>Protein:</Text>
-            <Text style={styles.nutritionValue}>{nutritionTotals.protein || 0} g</Text>
-          </View>
-          <View style={styles.nutritionRow}>
-            <Text style={styles.nutritionLabel}>Carbs:</Text>
-            <Text style={styles.nutritionValue}>{nutritionTotals.carbs || 0} g</Text>
-          </View>
-          <View style={styles.nutritionRow}>
-            <Text style={styles.nutritionLabel}>Fats:</Text>
-            <Text style={styles.nutritionValue}>{nutritionTotals.fats || 0} g</Text>
-          </View>
-        </View>
-
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
@@ -500,7 +442,10 @@ const WeeklyMeals = () => {
                                 accessibilityLabel={`View details for ${meal.title}`}
                               >
                                 <Image source={{ uri: meal.imageUrl }} style={styles.mealImage} />
-                                <Text style={styles.mealTitle}>{meal.title}</Text>
+                                <View style={styles.mealInfo}>
+                                  <Text style={styles.mealTitle}>{meal.title}</Text>
+                                </View>
+                                <AntDesign name="caretright" size={20} color="gray" accessibilityLabel="Swipe for options" />
                               </TouchableOpacity>
                             </Swipeable>
                           );
@@ -627,7 +572,14 @@ const styles = StyleSheet.create({
     elevation: 3,            // Shadow for Android
   },
   mealImage: { width: 60, height: 60, borderRadius: 10, marginRight: 10 },
-  mealTitle: { fontSize: 16 },
+  mealInfo: {
+    flex: 1,                  // Takes up remaining space between image and icon
+    marginLeft: 10,           // Space between image and title
+  },
+  mealTitle: { 
+    fontSize: 16, 
+    flexShrink: 1,            // Ensures text doesn't overflow
+  },
   groceryButton: {
     position: 'absolute',
     bottom: 30,
@@ -741,34 +693,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
-  },
-  nutritionContainer: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  nutritionHeader: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  nutritionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 2,
-  },
-  nutritionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  nutritionValue: {
-    fontSize: 16,
   },
 });
 
