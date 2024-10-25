@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Redirect } from 'expo-router';
 import { auth } from '../configs/FirebaseConfig'; // Ensure Firebase is properly set up
-import { onAuthStateChanged } from 'firebase/auth';
-import { User } from 'firebase/auth'; // Import Firebase User type
+import { onAuthStateChanged, User } from 'firebase/auth'; // Import Firebase User type
 import Splash1 from './../components/Splash/Splash1'; // Import the Splash1 component
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -14,32 +13,45 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let authTimeout: NodeJS.Timeout;
+    let errorTimeout: NodeJS.Timeout;
+
     // Subscribe to authentication state changes
     const unsubscribe = onAuthStateChanged(
       auth,
       (authenticatedUser) => {
         if (authenticatedUser) {
           setUser(authenticatedUser); // User is authenticated
+          console.log('User authenticated:', authenticatedUser.uid);
         } else {
           setUser(null); // No user is authenticated
+          console.log('No user authenticated.');
         }
+
         // Introduce a delay before setting loading to false
-        setTimeout(() => {
+        authTimeout = setTimeout(() => {
           setLoading(false);
-        }, 2750); // 2-second delay
+          console.log('Loading set to false.');
+        }, 2750); // 2.75-second delay
       },
       (authError) => {
         console.error('Authentication Error:', authError);
         setError('Failed to authenticate. Please try again.');
+
         // Introduce a delay before setting loading to false
-        setTimeout(() => {
+        errorTimeout = setTimeout(() => {
           setLoading(false);
-        }, 2750); // 2-second delay
+          console.log('Loading set to false after error.');
+        }, 2750); // 2.75-second delay
       }
     );
 
-    // Cleanup subscription on unmount
-    return unsubscribe;
+    // Cleanup subscription and clear timeouts on unmount
+    return () => {
+      unsubscribe();
+      clearTimeout(authTimeout);
+      clearTimeout(errorTimeout);
+    };
   }, []);
 
   // Show the Splash1 component while loading

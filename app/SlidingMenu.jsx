@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router'; // Ensure expo-router is installed and configured
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { signOut } from 'firebase/auth'; // Import signOut from Firebase
+import { auth } from '../configs/FirebaseConfig'; // Import your auth instance
 
 const { height, width } = Dimensions.get('window');
 
@@ -32,6 +34,20 @@ const SlidingMenu = ({ isVisible, toggleMenu }) => {
     const handlePress = (route) => {
         toggleMenu(false);
         router.push(route);
+    };
+
+    // Logout Handler
+    const handleLogout = async () => {
+        try {
+            console.log('Attempting to sign out...');
+            await signOut(auth);
+            console.log('User signed out successfully.');
+            toggleMenu(false);
+            router.push('/LoginScreen'); // Ensure the route is correct
+        } catch (error) {
+            console.error('Error signing out:', error);
+            // Optionally, display an error message to the user
+        }
     };
 
     const panResponder = useRef(
@@ -76,17 +92,17 @@ const SlidingMenu = ({ isVisible, toggleMenu }) => {
                     
                     {/* Menu Items Container */}
                     <View style={styles.menuItemsContainer}>
-                        <TouchableOpacity onPress={() => handlePress('MyRecipes')}>
+                        <TouchableOpacity onPress={() => handlePress('/MyRecipes')}>
                             <Text style={styles.menuItem}>My Recipes</Text>
                         </TouchableOpacity>
                         <View style={styles.separator} />
                         
-                        <TouchableOpacity onPress={() => handlePress('Nutrition')}>
+                        <TouchableOpacity onPress={() => handlePress('/Nutrition')}>
                             <Text style={styles.menuItem}>Nutrition</Text>
                         </TouchableOpacity>
                         <View style={styles.separator} />
                         
-                        <TouchableOpacity onPress={() => handlePress('Tutorial')}>
+                        <TouchableOpacity onPress={() => handlePress('/Tutorial')}>
                             <Text style={styles.menuItem}>Tutorial</Text>
                         </TouchableOpacity>
                         <View style={styles.separator} />
@@ -96,7 +112,7 @@ const SlidingMenu = ({ isVisible, toggleMenu }) => {
                     <View style={{ flex: 1 }} />
 
                     {/* Log Out Button */}
-                    <TouchableOpacity onPress={() => handlePress('LoginScreen')}>
+                    <TouchableOpacity onPress={handleLogout}>
                         <View style={styles.logoutButtonContainer}>
                             <Text style={styles.logoutButtonText}>Log Out</Text>
                         </View>
@@ -128,7 +144,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     menu: {
-        width: width * 0.5, // Updated to 80% as per initial slideAnim
+        width: width * 0.8, // Updated to 80% as per initial slideAnim
         height: height,
         backgroundColor: '#6B86B9',
         padding: 20,
